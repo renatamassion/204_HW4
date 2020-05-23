@@ -1,0 +1,105 @@
+---
+title: "ESM204_HW4"
+author: "Duerksen-Salm, Massion, Shoemaker"
+date: "5/23/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Attach packages
+
+library(tidyverse)
+library(tidyr)
+library(janitor)
+library(here)
+library(effsize)
+library(kableExtra)
+library(ggbeeswarm)
+library(ggridges)
+library(patchwork)
+library(car)
+library(corrplot)
+library(stargazer)
+library(sf)
+library(gganimate)
+library(transformr)
+
+```
+
+```{r}
+# Temp function
+
+temp = function(t,T)
+{
+  out = min(t*T/100,T)
+  return(out)
+}
+
+# Test temp function
+
+temp(t = 50, T = 5)
+
+# It works! Huzzah! 
+
+```
+
+```{r}
+# Keep function 
+
+keep = function(temp)
+{
+  out = exp(-0.05*temp^2)
+  return(out)
+}
+ 
+# Test keep function 
+
+keep(temp = 10) 
+
+# I got a number? Same as I got in wolfram alpha
+
+```
+
+```{r}
+# Consumption function
+
+consump = function(keep,t)
+{
+  out = keep*exp(0.01*t)
+  return(out)
+}
+
+# Test consump function
+
+consump(keep = 10, t = 5)
+
+# I think it works (cross reference with WA). Seems suspicious that I haven't had any issues 
+```
+
+```{r}
+# Utility function 
+
+util = function(C)
+{
+  out = ((C^(1-0.5))/(1-0.5))
+  return(out)
+}
+
+# Test util function 
+
+util(C = 5)
+
+# It works? 
+```
+
+```{r}
+# PV of util (ramsey) - we are given all the numbers here
+
+# r = 0.005 + 0.5*0.01 = 0.1
+
+```
+
