@@ -1,0 +1,211 @@
+---
+title: "ESM204_HW4"
+author: "Duerksen-Salm, Massion, Shoemaker"
+date: "5/23/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+# Temp function
+temp_2 = function(t,T)
+{
+  out = min(t*T/100,T)
+  return(out)
+}
+
+keep_2 = function(beta, temp_2)
+{
+  out = exp(-(beta)*(temp)^2)
+  return(out)
+}
+
+# Consumption function
+consump_2 = function(keep_2,t,g)
+{
+  out = keep_2*exp(g*t)
+  return(out)
+}
+
+# Utility function 
+util_2 = function(C, et)
+{
+  out = ((C^(1-et))/(1-et))
+  return(out)
+}
+```
+
+
+```{r}
+# SOMETHING
+T <- 4.4
+g <- 0.01
+eta <- 0.5
+beta <- 0.05
+delta <- 0.005
+r <- delta + (eta*g)
+
+# increase parameters by 10%
+T_new <- 4.4*1.1 #4.84
+g_new <- g*1.1 # 0.011
+eta_new <- eta*1.1 # 0.55
+beta_new <- beta*1.1 # 0.055
+delta_new <- delta*1.1 # 0.0055
+r_new <- delta_new + (eta_new*g_new)
+
+r_g <- delta + (eta*g_new)
+r_eta <- delta + (eta_new*g)
+
+```
+
+```{r}
+# 10% change in T
+
+## No CC
+change_T_temp <- temp_2(t = 200,
+                        T = 0) # 0
+change_T_keep <- keep_2(bet = beta,
+                        temp = change_T_temp) # 
+change_T_consump <- consump_2(keep_2 = change_T_keep,
+                             t = 200,
+                             g = g) # 
+change_T_util <- util_2(C = change_T_consump,
+          et = eta) # 5.436564
+
+PV_no_change = (change_T_util)/((1+r)^200)
+# Present Value = 0.7431042
+
+## CC
+change_T_temp <- temp_2(t = 200,
+                        T = T_new) # 4.84
+change_T_keep <- keep_2(bet = beta,
+                        temp = change_T_temp) # 0.3099699
+change_T_consump <- consump_2(keep_2 = change_T_keep,
+                             t = 200,
+                             g = g) # 2.290385
+change_T_util <- util_2(C = change_T_consump,
+          et = eta) # 3.026804
+
+PV_CC_change = (change_T_util)/((1+r)^200)
+# Present Value = 0.4137228
+
+L_T <- (((PV_CC_change - PV_no_change)/(PV_no_change))*100)
+# -44.32506 %
+
+
+
+# 10% change in g
+
+## No CC
+change_T_temp <- temp_2(t = 200,
+                        T = 0) # 0
+change_T_keep <- keep_2(bet = beta,
+                        temp = change_T_temp) # 
+change_T_consump <- consump_2(keep_2 = change_T_keep,
+                             t = 200,
+                             g = g_new) # 
+change_T_util <- util_2(C = change_T_consump,
+          et = eta) # 6.008332
+
+PV_no_change = (change_T_util)/((1+r_g)^200)
+# Present Value = 0.8212572
+
+## CC
+change_T_temp <- temp_2(t = 200,
+                        T = 4.4) # 4.84
+change_T_keep <- keep_2(bet = beta,
+                        temp = change_T_temp)
+change_T_consump <- consump_2(keep_2 = change_T_keep,
+                             t = 200,
+                             g = g_new)
+change_T_util <- util_2(C = change_T_consump,
+          et = eta) # 3.026804
+
+PV_CC_change = (change_T_util)/((1+r_g)^200)
+# Present Value = 0.4584498
+
+L_g <- (((PV_CC_change - PV_no_change)/(PV_no_change))*100)
+# -38.36868 %
+
+
+
+# 10% change in eta
+
+## No CC
+change_T_temp <- temp_2(t = 200,
+                        T = 0) # 0
+change_T_keep <- keep_2(bet = beta,
+                        temp = change_T_temp) # 
+change_T_consump <- consump_2(keep_2 = change_T_keep,
+                             t = 200,
+                             g = g) # 
+change_T_util <- util_2(C = change_T_consump,
+          et = eta_new) # 5.465785
+
+PV_no_change = (change_T_util)/((1+r_eta)^200)
+# Present Value = 0.7470983
+
+## CC
+change_T_temp <- temp_2(t = 200,
+                        T = 4.4) # 4.44
+change_T_keep <- keep_2(bet = beta,
+                        temp = change_T_temp)
+change_T_consump <- consump_2(keep_2 = change_T_keep,
+                             t = 200,
+                             g = g)
+change_T_util <- util_2(C = change_T_consump,
+          et = eta_new) # 3.535687
+
+PV_CC_change = (change_T_util)/((1+r_eta)^200)
+# Present Value = 0.4832803
+
+L_eta <- (((PV_CC_change - PV_no_change)/(PV_no_change))*100)
+# -35.31236 %
+
+
+
+
+# 10% change in beta
+
+## No CC
+change_T_temp <- temp_2(t = 200,
+                        T = 0) # 0
+change_T_keep <- keep_2(bet = beta_new,
+                        temp = change_T_temp) # 
+change_T_consump <- consump_2(keep_2 = change_T_keep,
+                             t = 200,
+                             g = g) # 
+change_T_util <- util_2(C = change_T_consump,
+          et = eta) # 5.465785
+
+PV_no_change = (change_T_util)/((1+r)^200)
+# Present Value = 0.7470983
+
+## CC
+change_T_temp <- temp_2(t = 200,
+                        T = 4.4) # 4.44
+change_T_keep <- keep_2(bet = beta_new,
+                        temp = change_T_temp)
+change_T_consump <- consump_2(keep_2 = change_T_keep,
+                             t = 200,
+                             g = g)
+change_T_util <- util_2(C = change_T_consump,
+          et = eta) # 3.535687
+
+PV_CC_change = (change_T_util)/((1+r)^200)
+# Present Value = 0.4832803
+
+L_beta <- (((PV_CC_change - PV_no_change)/(PV_no_change))*100)
+# -41.2806 %
+```
+
+```{r}
+temp(t,T)
+keep_2(bet,tem)
+consump_2(keep_2,t,g)
+util_2(C,et)
+```
