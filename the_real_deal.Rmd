@@ -1,0 +1,345 @@
+---
+title: 'ECON: Homework 4'
+author: "Zoe Duerksen-Salm & Renata Massion"
+date: "5/25/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning=FALSE)
+
+# Attach packages
+library(tidyverse)
+library(tidyr)
+library(janitor)
+library(here)
+library(effsize)
+library(kableExtra)
+library(ggbeeswarm)
+library(ggridges)
+library(patchwork)
+library(car)
+library(corrplot)
+library(stargazer)
+library(sf)
+library(gganimate)
+library(transformr)
+```
+
+```{r}
+## Define Parameters
+
+delta = 0.005
+eta = 0.5
+g = 0.01
+beta = 0.05
+
+r = delta + eta*g
+
+t <- 0:200
+
+T_0 <- 0
+T_2 <- 2
+T_4 <- 4
+T_4.4 <- 4.4
+T_6 <- 6
+T_8 <- 8
+
+
+## Write functions
+
+# Temp
+temp = function(t,T)
+{
+  out = pmin(t*T/100,T)
+  return(out)
+}
+
+# Keep 
+keep = function(beta, temp)
+{
+  out = exp(-1*beta*temp^2)
+  return(out)
+}
+
+# Consumption
+consump = function(keep,t,g)
+{
+  out = keep*exp(g*t)
+  return(out)
+}
+
+# Utility
+util = function(C, eta)
+{
+  out = ((C^(1-eta))/(1-eta))
+  return(out)
+}
+```
+---
+
+---
+
+## Question #1: Plots
+```{r}
+# Make data frames for 3 temps
+
+
+T_0_df <- data.frame(year = t,
+                 temp_increase = T_0,
+                 temp = temp(t, T_0)) %>% 
+  mutate(fraction_economy_retained0 = keep(beta,temp)) %>% 
+  mutate(consumption0 = consump(fraction_economy_retained0, t, g)) %>% 
+  mutate(utility0 = util(consumption0, eta)) %>% 
+  mutate(pv_utility0 = utility0/((1+r)^t))
+
+T_2_df <- data.frame(year = t,
+                 temp_increase = T_2,
+                 temp = temp(t, T_2)) %>% 
+  mutate(fraction_economy_retained2 = keep(beta,temp)) %>% 
+  mutate(consumption2 = consump(fraction_economy_retained2, t, g)) %>% 
+  mutate(utility2 = util(consumption2, eta))
+
+T_8_df <- data.frame(year = t,
+                 temp_increase = T_8,
+                 temp = temp(t, T_8)) %>% 
+  mutate(fraction_economy_retained8 = keep(beta,temp)) %>% 
+  mutate(consumption8 = consump(fraction_economy_retained8, t, g)) %>% 
+  mutate(utility8 = util(consumption8, eta))
+```
+
+#### A. Plot temperature over time
+
+```{r}
+ggplot() +
+  geom_line(data = T_0_df, aes(x = year, y = temp, color = "No Climate Change"),
+            size = 1) +
+  geom_line(data = T_2_df, aes(x = year, y = temp, color = "Modest Climate Change"),
+            size = 1)+
+  geom_line(data = T_8_df, aes(x = year, y = temp, color = "Extreme Climate Change"),
+            size = 1)+
+  scale_color_manual(values = c("maroon", "orange", "forestgreen"))+
+  theme_light() +
+  theme(legend.position = "bottom") +
+  labs(x = "Year",
+       y = "Increase in Temperature",
+       title = "Temperature Over Time",
+       color = "Projection") 
+```
+
+#### B. Plot consumption over time
+
+```{r}
+ggplot() +
+  geom_line(data = T_0_df,
+            aes(x = year,
+                y = consumption0,
+                color = "No climate change"),
+            size = 1)+
+  geom_line(data = T_2_df,
+            aes(x = year,
+                y = consumption2,
+                color = "Modest climate change"),
+            size = 1)+
+  geom_line(data = T_8_df,
+            aes(x = year,
+                y = consumption8,
+                color = "Extreme climate change"),
+            size = 1) +
+  scale_color_manual(values = c("maroon", "orange", "forestgreen")) +
+  theme_light() +
+  theme(legend.position = "bottom") +
+  labs(x = "Year",
+       y = "Consumption",
+       title = "Consumption Over Time",
+       color = "Projection")
+```
+
+#### C. Plot undiscounted utility over time
+
+```{r}
+ggplot() +
+  geom_line(data = T_0_df,
+            aes(x = year,
+                y = utility0,
+                color = "No climate change"),
+            size = 1)+
+  geom_line(data = T_2_df,
+            aes(x = year,
+                y = utility2,
+                color = "Modest climate change"),
+            size = 1)+
+  geom_line(data = T_8_df,
+            aes(x = year,
+                y = utility8,
+                color = "Extreme climate change"),
+            size = 1) +
+  scale_color_manual(values = c("maroon", "orange", "forestgreen")) +
+  theme_light() +
+  theme(legend.position = "bottom") +
+  labs(x = "Year",
+       y = "Undiscounted Utility",
+       title = "Undiscounted Utility Over Time",
+       color = "Projection")
+```
+
+---
+
+---
+
+## Question #2: Analysis
+
+#### A. T=4.4 under BAU
+```{r}
+
+# temp(t, T)
+# keep(beta, temp)
+# consump(keep, t, g)
+# util(C, eta)
+
+df_4.4_all <- data.frame(year = t,
+                 temp_increase = T_4.4,
+                 temp = temp(t, T_4.4)) %>% 
+  mutate(keep4.4 = keep(beta, temp)) %>% 
+  mutate(consump4.4 = consump(keep = keep4.4, t, g)) %>% 
+  mutate(util4.4 = util(consump4.4, eta)) %>% 
+  mutate(pv_util4.4 = util4.4/((1+r)^t))
+
+df_0_all <- data.frame(year = t,
+                 temp_increase = T_0,
+                 temp = temp(t, T_0)) %>% 
+  mutate(keep0 = keep(beta, temp)) %>% 
+  mutate(consump0 = consump(keep = keep0, t, g)) %>% 
+  mutate(util0 = util(consump0, eta)) %>% 
+  mutate(pv_util0 = util0/((1+r)^t))
+
+pv_U_cc <- sum(df_4.4_all$pv_util4.4)
+pv_U_no_cc <- sum(df_0_all$pv_util0)
+# Percent difference
+pct_loss_L <- ((pv_U_cc-pv_U_no_cc)/(pv_U_no_cc))*100
+```
+
+Present value utility with climate change: **`r round(pv_U_cc, 2)`**
+
+Present value utility without climate change: **`r round(pv_U_no_cc, 2)`**
+
+Percent loss in PV utility from climate change (L): **`r round(pct_loss_L, 2)`%**
+
+---
+
+#### B. Percent change in PV utility (L) that results from a 10% decrease in certain parameters
+
+```{r}
+T_new <- 4.4*1.1 #4.84
+g_new <- g*1.1 # 0.011
+eta_new <- eta*1.1 # 0.55
+beta_new <- beta*1.1 # 0.055
+delta_new <- delta*1.1 # 0.0055
+
+r_g <- delta + (eta*g_new)
+r_eta <- delta + (eta_new*g)
+```
+
+##### Increase in temperature
+```{r}
+# temp(t, T)
+# keep(beta, temp)
+# consump(keep, t, g)
+# util(C, eta)
+
+T_inc <- data.frame(year = t,
+                 temp_increase = T_new,
+                 temp = temp(t, T_new)) %>% 
+  mutate(keepT = keep(beta,temp)) %>% 
+  mutate(consumpT = consump(keepT, t, g)) %>% 
+  mutate(utilT = util(consumpT, eta)) %>% 
+  mutate(pv_util = utilT/((1+r)^t))
+
+pv_U_T_new <- sum(T_inc$pv_util)
+
+# New L
+pct_loss_L_T_new <- (pv_U_T_new-pv_U_no_cc)/pv_U_no_cc
+
+# Percent change in L
+pct_change_L_T_new <- (pct_loss_L_T_new -pct_loss_L)/pct_loss_L
+```
+
+##### Increase in g
+```{r}
+# Increase g by 10%:
+# new discount rate
+
+g_inc <- data.frame(year = t,
+                 temp_increase = T_4.4,
+                 temp = temp(t, T_4.4)) %>% 
+  mutate(fraction_economy_retained = econ(beta,temp)) %>% 
+  mutate(consumption = C(fraction_economy_retained, g_new, year)) %>%
+  mutate(utility = U(consumption, n)) %>% 
+  mutate(pv_utility = utility/((1+r)^t))
+# Sum PV
+pv_U_g_new <- sum(g_new_df$pv_utility)
+# New percent difference (L)
+pct_loss_L_g_new <- (pv_U_g_new-pv_U_without_cc)/pv_U_without_cc
+# Percent change in L
+pct_change_L_g_new <- (pct_loss_L_g_new -pct_loss_L)/pct_loss_L
+```
+
+##### Increase in eta
+```{r}
+
+```
+
+##### Increase in beta
+```{r}
+
+```
+
+---
+
+#### C. Maximum value of θ society would be willing to endure every year to completely prevent climate change.
+```{r}
+#theta^(1-eta) * npv_pv_u_4.4 = npv_pv_u_0
+theta <- function(pv_U_cc, pv_U_no_cc)
+{
+  output <- 1 - (pv_U_cc/pv_U_no_cc)^((1-eta)^-1)
+  return(output)
+}
+theta_star <- theta(pv_U_cc,pv_U_no_cc)
+```
+θ∗ = **`r round(theta_star, 2)`**
+
+---
+
+#### D. θ∗ under uncertainty over T.
+```{r}
+# temp(t, T)
+# keep(beta, temp)
+# consump(keep, t, g)
+# util(C, eta)
+
+df_uncertain <- data.frame("year"= t) %>%
+  mutate(temp2 = temp(t, T_2),
+         keep2 = keep(beta, temp2),
+         consump2 = consump(keep2, t, g),
+         util2 = util(consump2, eta),
+         pv_u_2 = util2/((1+r)^t),
+         temp4 = temp(t, T_4),
+         keep4 = keep(beta, temp4),
+         consump4 = consump(keep4, t, g),
+         util4 = util(consump4, eta),
+         pv_u_4 = util4/((1+r)^t),
+         temp6 = temp(t, 6),
+         keep6 = keep(beta, temp6),
+         consump6 = consump(keep6, t, g),
+         util6 = util(consump6, eta),
+         pv_u_6 = util6/((1+r)^t))
+         
+npv_pv_u_2 <- sum(df_uncertain$pv_u_2)
+npv_pv_u_4 <- sum(df_uncertain$pv_u_4)
+npv_pv_u_6 <- sum(df_uncertain$pv_u_6)
+
+npv_pv_u_uncertain <- (0.2 * npv_pv_u_2) + (0.5 * npv_pv_u_4) + (0.3 * npv_pv_u_6)
+
+theta_uncertain <- theta(npv_pv_u_uncertain, pv_U_no_cc)
+```
+Uncertain θ = **`r round(theta_uncertain, 2)`**
