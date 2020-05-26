@@ -1,6 +1,6 @@
 ---
 title: "ESM204_HW4"
-author: "Duerksen-Salm, Massion, Shoemaker"
+author: "Duerksen-Salm, Massion"
 date: "5/23/2020"
 output: html_document
 ---
@@ -56,6 +56,12 @@ keep = function(temp)
   out = exp(-0.05*temp^2)
   return(out)
 }
+
+keep_new = function(temp)
+{
+  out = exp(-1*beta*temp^2)
+  return(out)
+}
  
 # Test keep function 
 
@@ -74,6 +80,12 @@ consump = function(keep,t)
   return(out)
 }
 
+consump_new = function(keep,t)
+{
+  out = keep*exp(g*t)
+  return(out)
+}
+
 # Test consump function 
 
 consump(keep = 10, t = 5) # 10.51271
@@ -87,6 +99,12 @@ consump(keep = 10, t = 5) # 10.51271
 util = function(C)
 {
   out = ((C^(1-0.5))/(1-0.5))
+  return(out)
+}
+
+util_new = function(C)
+{
+  out = ((C^(1-eta))/(1-eta))
   return(out)
 }
 
@@ -232,7 +250,7 @@ keep_CC_4.4 <- keep(temp_CC_4.4) # 0.379842
 consump_CC_4.4 <- consump(keep_CC_4.4, 200) # 2.806674
 util_CC_4.4 <- util(consump_CC_4.4) # 3.350626
 
-PV_CC_4.4 = (util_CC_4.4)/((1+r)^200)
+PV_CC_4.4 = (util_CC_4.4)/((1+r)^199)
 # Present Value = 0.4579849
 
 #V0 = (Vt)/((1+r)^t)
@@ -247,7 +265,7 @@ keep_CC_no <- keep(temp_CC_no) #1
 consump_CC_no <- consump(keep_CC_no, 200) #7.389056
 util_CC_no <- util(consump_CC_no) #5.436564
 
-PV_CC_no = (util_CC_no)/((1+r)^200)
+PV_CC_no = (util_CC_no)/((1+r)^199)
 # Present Value = 0.7431042
 ```
 
@@ -357,4 +375,126 @@ keep_no_CC <- keep(no_CC)
 consump_no_CC <- consump(keep_no_CC, 200)
 # = 2.718282
 ```
+
+```{r}
+# -----------------
+# Set up base case parameters
+# -----------------
+delta = 0.005
+eta = 0.5
+g = 0.01
+beta = 0.05
+# discount rate
+r = delta + eta*g
+t <- 0:200
+T_4.4 <- 4.4
+T_0 <- 0
+
+temp <- function(t, T) 
+{
+  out = pmin(t*T/100, T)}
+
+df_4.4_all <- data.frame(year = t,
+                 temp_increase = T_4.4,
+                 temp = temp(t = t, T = T_4.4)) %>% 
+  mutate(fraction_economy_retained4.4 = keep_new(temp)) %>% 
+  mutate(consumption4.4 = consump_new(keep = fraction_economy_retained4.4, t = t)) %>% 
+  mutate(utility4.4 = util_new(consumption4.4)) %>% 
+  # add column for discounted utility
+  mutate(pv_utility4.4 = utility4.4/((1+r)^t))
+
+df_0_all <- data.frame(year = t,
+                 temp_increase = T_0,
+                 temp = temp(t, T_0)) %>% 
+  mutate(fraction_economy_retained0 = keep_new(temp)) %>% 
+  mutate(consumption0 = consump_new(keep = fraction_economy_retained0, t = t)) %>% 
+  mutate(utility0 = util_new(consumption0)) %>% 
+  mutate(pv_utility0 = utility0/((1+r)^t))
+
+pv_U_with_cc <- sum(df_4.4_all$pv_utility4.4)
+pv_U_without_cc <- sum(df_0_all$pv_utility0)
+# Percent difference
+pct_loss_L <- ((pv_U_with_cc-pv_U_without_cc)/(pv_U_without_cc))*100
+```
+
+```{r}
+T_new <- 4.4*1.1 #4.84
+g_new <- g*1.1 # 0.011
+eta_new <- eta*1.1 # 0.55
+beta_new <- beta*1.1 # 0.055
+delta_new <- delta*1.1 # 0.0055
+
+r_g <- delta + (eta*g_new)
+r_eta <- delta + (eta_new*g)
+```
+
+
+
+##### c. Maximum fraction (theta star) of consumption that society would be willing to give up each year to prevent climate change
+
+```{r}
+#-------------------------------
+#2c 
+#theta^(1-eta) * npv_pv_u_4.4 = npv_pv_u_0
+theta <- function(pv_U_with_cc, pv_U_without_cc)
+{
+  output <- 1 - (pv_U_with_cc/pv_U_without_cc)^((1-eta)^-1)
+  return(output)
+}
+theta(pv_U_with_cc,pv_U_without_cc)
+
+```
+
+
+```{r}
+#--------------------------------
+#2d. Uncertainty
+## T = 2 w probability of 0.2
+## T = 4 w probability of 0.5
+## T = 6 with a probability of 0.3
+## p * utility(T=2) + p * utillity(T=4) + p * utility(T=6)
+
+#temp(t,T)
+#keep(temp)
+#consump(keep, t)
+#util(C aka consump)
+
+T_2 <- 2
+T_4 <- 4
+T_6 <- 6
+
+
+df_uncertain <- data.frame(year = t) %>% 
+  mutate(temp2 = temp(t=t, T=2))
+  mutate(fraction_economy_retained0 = keep_new(temp)) %>% 
+  mutate(consumption0 = consump_new(keep = fraction_economy_retained0, t = t)) %>% 
+  mutate(utility0 = util_new(consumption0)) %>% 
+  mutate(pv_utility0 = utility0/((1+r)^t))
+
+
+
+df_uncertain <- data.frame("year"= t) %>%
+  mutate(temp_2 = temp(t = t, T = 2),
+         K_2 = keep(temp_2),
+         C_2 = consump(K_2, t),
+         U_2 = util(C_2),
+         pv_u_2 = U_2/((1+r)^t),
+         temp_4 = temp(t, 4),
+         K_4 = keep(temp_4),
+         C_4 = consump(K_4, t),
+         U_4 = util(C_4),
+         pv_u_4 = U_4/((1+r)^t),
+         temp_6 = temp(t, 6),
+         K_6 = keep(temp_6),
+         C_6 = consump(K_6, t),
+         U_6 = util(C_6),
+         pv_u_6 = U_6/((1+r)^t))
+         
+npv_pv_u_2 <- sum(df_uncertain$pv_u_2)
+npv_pv_u_4 <- sum(df_uncertain$pv_u_4)
+npv_pv_u_6 <- sum(df_uncertain$pv_u_6)
+npv_pv_u_uncertain <- (0.2 * npv_pv_u_2) + (0.5 * npv_pv_u_4) + (0.3 * npv_pv_u_6)
+theta(npv_pv_u_uncertain, pv_U_without_cc)
+```
+
 
