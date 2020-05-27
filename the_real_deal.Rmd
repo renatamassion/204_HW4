@@ -76,11 +76,30 @@ util = function(C, eta)
   return(out)
 }
 ```
+
 ---
+
+**Baseline calculations for all questions:**
+
+- Used R Studio for all questions
+- We created variables for the given parameters (delta, eta, g, beta, and time t as a sequence of 0-200)
+- We then created functions in R Studio for all five given equations (temperature, keep, consumption, utility, and Ramsey's rule).
+
+
 
 ---
 
 ## Question #1: Plots
+
+**Baseline calculations for question #1:**
+
+* Create data frames for no climate change projection/scenario (T=0) and both potential climate change projections/scenarios (T=2 and T=8).
+* Include in data frames:
+  + **rows** for every year
+  + **columns** for results from each function (temperature, keep, consumption, and utility)
+
+---
+
 ```{r}
 # Make data frames for 3 temps
 
@@ -127,6 +146,12 @@ ggplot() +
        color = "Projection") 
 ```
 
+*Calculations:*
+
+* Create a plot that combines information from the three previously created data frames. Plot year (0 to 200) on the x-axis and increase in temperature (calculated using temperature function/equation) on the y-axis.
+
+---
+
 #### B. Plot consumption over time
 
 ```{r}
@@ -154,6 +179,12 @@ ggplot() +
        title = "Consumption Over Time",
        color = "Projection")
 ```
+
+*Calculations:*
+
+* Create a plot that combines information from the three previously created data frames. Plot year (0 to 200) on the x-axis and consumption (calculated using consumption function/equation) on the y-axis.
+
+---
 
 #### C. Plot undiscounted utility over time
 
@@ -183,11 +214,15 @@ ggplot() +
        color = "Projection")
 ```
 
----
+*Calculations:*
+
+* Create a plot that combines information from the three previously created data frames. Plot year (0 to 200) on the x-axis and utility (calculated using utility function/equation) on the y-axis.
 
 ---
 
 ## Question #2: Analysis
+
+---
 
 #### A. T=4.4 under BAU
 ```{r}
@@ -219,11 +254,21 @@ pv_U_no_cc <- sum(df_0_all$pv_util0)
 pct_loss_L <- ((pv_U_cc-pv_U_no_cc)/(pv_U_no_cc))*100
 ```
 
-Present value utility with climate change: **`r round(pv_U_cc, 2)`**
+* Present value utility with climate change: **`r round(pv_U_cc, 2)`**
 
-Present value utility without climate change: **`r round(pv_U_no_cc, 2)`**
+* Present value utility without climate change: **`r round(pv_U_no_cc, 2)`**
 
-Percent loss in PV utility from climate change (L): **`r round(pct_loss_L, 2)`%**
+* Percent loss in PV utility from climate change (L): **`r round(pct_loss_L, 2)`%**
+
+*Calculations:*
+
+1. Create two data frames: (a) projections under no climate change and (b) projections under a T=4.4 climate change scenario. 
+   + Include rows for each year.
+   + Mutate columns to represent each function and the present value of utility.
+   + PV equation is [utility/((1+r)^t^)].
+2. Individually sum PV columns from each data frame.
+3. Calculate percent loss (L)
+    + Equation: L = [ (PV with CC - PV without CC) / (PV without CC) ]
 
 ---
 
@@ -240,7 +285,6 @@ r_g <- delta + (eta*g_new)
 r_eta <- delta + (eta_new*g)
 ```
 
-##### Increase in temperature
 ```{r}
 # temp(t, T)
 # keep(beta, temp)
@@ -255,58 +299,178 @@ T_inc <- data.frame(year = t,
   mutate(utilT = util(consumpT, eta)) %>% 
   mutate(pv_util = utilT/((1+r)^t))
 
+# Sum PV
 pv_U_T_new <- sum(T_inc$pv_util)
 
 # New L
-pct_loss_L_T_new <- (pv_U_T_new-pv_U_no_cc)/pv_U_no_cc
+pct_loss_L_T_new <- ((pv_U_T_new-pv_U_no_cc)/pv_U_no_cc)*100
 
 # Percent change in L
-pct_change_L_T_new <- (pct_loss_L_T_new -pct_loss_L)/pct_loss_L
+pct_change_L_T_new <- ((pct_loss_L_T_new -pct_loss_L)/pct_loss_L)*100
 ```
+* Increase in **temperature**: % change in L = **`r round(pct_change_L_T_new, 2)`%**
 
-##### Increase in g
 ```{r}
 # Increase g by 10%:
 # new discount rate
 
-g_inc <- data.frame(year = t,
+g_inc_4.4 <- data.frame(year = t,
                  temp_increase = T_4.4,
                  temp = temp(t, T_4.4)) %>% 
-  mutate(fraction_economy_retained = econ(beta,temp)) %>% 
-  mutate(consumption = C(fraction_economy_retained, g_new, year)) %>%
-  mutate(utility = U(consumption, n)) %>% 
-  mutate(pv_utility = utility/((1+r)^t))
+  mutate(keepT = keep(beta,temp)) %>% 
+  mutate(consumpT = consump(keepT, t, g_new)) %>% 
+  mutate(utilT = util(consumpT, eta)) %>% 
+  mutate(pv_util = utilT/((1+r_g)^t))
+
+g_inc_0 <- data.frame(year = t,
+                 temp_increase = T_0,
+                 temp = temp(t, T_0)) %>% 
+  mutate(keepT = keep(beta,temp)) %>% 
+  mutate(consumpT = consump(keepT, t, g_new)) %>% 
+  mutate(utilT = util(consumpT, eta)) %>% 
+  mutate(pv_util = utilT/((1+r_g)^t))
+
 # Sum PV
-pv_U_g_new <- sum(g_new_df$pv_utility)
+pv_U_g_new <- sum(g_inc_4.4$pv_util)
+pv_U_no_g <- sum(g_inc_0$pv_util)
+
 # New percent difference (L)
-pct_loss_L_g_new <- (pv_U_g_new-pv_U_without_cc)/pv_U_without_cc
+pct_loss_L_g_new <- ((pv_U_g_new - pv_U_no_g)/pv_U_no_g)*100
+
 # Percent change in L
-pct_change_L_g_new <- (pct_loss_L_g_new -pct_loss_L)/pct_loss_L
+pct_change_L_g_new <- ((pct_loss_L_g_new - pct_loss_L)/pct_loss_L)*100
 ```
+* Increase in **g**: % change in L = **`r round(pct_change_L_g_new, 2)`%**
 
-##### Increase in eta
 ```{r}
+# Increase eta by 10%:
 
+eta_inc_4.4 <- data.frame(year = t,
+                 temp_increase = T_4.4,
+                 temp = temp(t, T_4.4)) %>% 
+  mutate(keepT = keep(beta,temp)) %>% 
+  mutate(consumpT = consump(keepT, t, g)) %>% 
+  mutate(utilT = util(consumpT, eta_new)) %>% 
+  mutate(pv_util = utilT/((1+r_eta)^t))
+
+eta_inc_0 <- data.frame(year = t,
+                 temp_increase = T_0,
+                 temp = temp(t, T_0)) %>% 
+  mutate(keepT = keep(beta,temp)) %>% 
+  mutate(consumpT = consump(keepT, t, g)) %>% 
+  mutate(utilT = util(consumpT, eta_new)) %>% 
+  mutate(pv_util = utilT/((1+r_eta)^t))
+
+# Sum PV
+pv_U_eta_new <- sum(eta_inc_4.4$pv_util)
+pv_U_no_eta <- sum(eta_inc_0$pv_util)
+
+# New percent difference (L)
+pct_loss_L_eta_new <- ((pv_U_eta_new - pv_U_no_eta)/pv_U_no_eta)*100
+
+# Percent change in L
+pct_change_L_eta_new <- ((pct_loss_L_eta_new - pct_loss_L)/pct_loss_L)*100
 ```
+* Increase in **eta**: % change in L = **`r round(pct_change_L_eta_new, 2)`%**
 
-##### Increase in beta
 ```{r}
+# Increase beta by 10%:
 
+beta_inc_4.4 <- data.frame(year = t,
+                 temp_increase = T_4.4,
+                 temp = temp(t, T_4.4)) %>% 
+  mutate(keepT = keep(beta_new,temp)) %>% 
+  mutate(consumpT = consump(keepT, t, g)) %>% 
+  mutate(utilT = util(consumpT, eta)) %>% 
+  mutate(pv_util = utilT/((1+r)^t))
+
+beta_inc_0 <- data.frame(year = t,
+                 temp_increase = T_0,
+                 temp = temp(t, T_0)) %>% 
+  mutate(keepT = keep(beta_new,temp)) %>% 
+  mutate(consumpT = consump(keepT, t, g)) %>% 
+  mutate(utilT = util(consumpT, eta)) %>% 
+  mutate(pv_util = utilT/((1+r)^t))
+
+# Sum PV
+pv_U_beta_new <- sum(beta_inc_4.4$pv_util)
+pv_U_no_beta <- sum(beta_inc_0$pv_util)
+
+# New percent difference (L)
+pct_loss_L_beta_new <- ((pv_U_beta_new - pv_U_no_beta)/pv_U_no_beta)*100
+
+# Percent change in L
+pct_change_L_beta_new <- ((pct_loss_L_beta_new - pct_loss_L)/pct_loss_L)*100
 ```
+* Increase in **beta**: % change in L = **`r round(pct_change_L_beta_new, 2)`%**
+
+*Calculations:*
+
+* Use the same calculation steps from question 2A. BUT, run code 4 separate times (for no climate change scenario and T=4.4 climate change scenario), each run changing increasing one designated variable by 10%.
+* **10% change in temp**
+  + Increase temperature parameter by 10%. New temp for no CC = 0; new temp for CC 4.4 = 4.84.
+    + (old no CC temp * 110%) > (0 * 1.1) > 0
+    + (old CC temp * 110%) > (4.4 * 1.1) > 4.84
+  + Find the new percent change using the same method as in 2A (summing PVs + % change formula).
+  + Use the percent change formula to find the change from the previously calculated L, to the new L [ (New L - Old L) / (Old L) ].
+* **10% change in g**
+  + Increase g parameter by 10%. New g for both projections = 0.011.
+    + (old g * 110%) > (0.01 * 1.1) > 0.011
+  + Increasing the g parameter also requires recalculation of the discount value (by plugging the new g into the Ramsey equation).
+    + new r = delta + (eta * (new g)) > new r = 0.005 + (0.5 * (0.011)) > new r = 0.0105
+  + Find the new percent change using the same method as in 2A (summing PVs + % change formula).
+  + Use the percent change formula to find the change from the previously calculated L, to the new L [ (New L - Old L) / (Old L) ].
+* **10% change in eta**
+  + Increase eta parameter by 10%. New eta = 0.55.
+    + (old eta * 110%) > (0.5 * 1.1) > 0.55
+  + Increasing the eta parameter also requires recalculation of the discount value (by plugging the new eta into the Ramsey equation).
+    + new r = delta + ((new eta) * g) > new r =  0.005 + ((0.55) * 0.01) > new r = 0.0105
+  + Find the new percent change using the same method as in 2A (summing PVs + % change formula).
+  + Use the percent change formula to find the change from the previously calculated L, to the new L [ (New L - Old L) / (Old L) ].
+* **10% change in beta**
+  + Increase beta parameter by 10%. New beta = 0.055.
+    + (old beta * 110%) > (0.05 * 1.1) > 0.055
+  + Find the new percent change using the same method as in 2A (summing PVs + % change formula).
+  + Use the percent change formula to find the change from the previously calculated L, to the new L [ (New L - Old L) / (Old L) ].
 
 ---
 
 #### C. Maximum value of θ society would be willing to endure every year to completely prevent climate change.
 ```{r}
 #theta^(1-eta) * npv_pv_u_4.4 = npv_pv_u_0
+
+# Consumption
+consump_theta = function(keep,t,g, theta)
+{
+  out = (keep*exp(g*t))*(1-theta)
+  return(out)
+}
+
 theta <- function(pv_U_cc, pv_U_no_cc)
 {
   output <- 1 - (pv_U_cc/pv_U_no_cc)^((1-eta)^-1)
   return(output)
 }
-theta_star <- theta(pv_U_cc,pv_U_no_cc)
+theta_star <- (theta(pv_U_cc,pv_U_no_cc))*100
+
+# 1-(pv_U_cc/pv_U_no_cc)^(1/(1-eta))
 ```
-θ∗ = **`r round(theta_star, 2)`**
+θ∗ = **`r round(theta_star, 2)`%**
+
+*Calculations:*
+
+1. Set PV of discounted utility when T=4.4 equal to PV of discounted utility when T=0 multiplied by theta.
+    + PV(4.4) = PV(0)*(theta)
+2. Find NPV for each climate change scenario (4.4 vs. 0).
+    + NPV(4.4) = NPV(0)*theta^(1-eta)^
+3. Rearrange equation such that theta is on the left side of the equation.
+    + theta = (NPV(4.4)/NPV(0))^(1/(1-eta))^
+4. Plug NPV values into the equation.
+    + theta = (198.66/255.2734)^(1/(1-0.5))^
+    + theta = 0.6056333
+5. Calculate theta* by doing 1-theta found in step 4 and multiplying by 100 to get a percentage.
+    + theta* = (1 - 0.6056333)*100
+    + theta* = 39.44%
 
 ---
 
@@ -340,6 +504,31 @@ npv_pv_u_6 <- sum(df_uncertain$pv_u_6)
 
 npv_pv_u_uncertain <- (0.2 * npv_pv_u_2) + (0.5 * npv_pv_u_4) + (0.3 * npv_pv_u_6)
 
-theta_uncertain <- theta(npv_pv_u_uncertain, pv_U_no_cc)
+theta_uncertain <- (theta(npv_pv_u_uncertain, pv_U_no_cc))*100
+
+# 1-(npv_pv_u_uncertain/pv_U_no_cc)^(1/(1-eta))
 ```
-Uncertain θ = **`r round(theta_uncertain, 2)`**
+Uncertain θ = **`r round(theta_uncertain, 2)`%**
+
+*Calculations:*
+
+
+
+1. Create a data frame for projections under 3 climate change scenarios (T=2, T=4, and T=6) projections under a T=4.4 climate change scenario. 
+   + Include rows for each year.
+   + Mutate columns to represent calculated answer for each function and present value for a given projection.
+2. Find NPV for each scenario by summing columns for PV values.
+3. Determine total NPV under uncertainty using the equation: NPV = (p(2) * PV(2)) + (p(4) * PV(4)) + (p(6) * PV(6))
+    + Where p = probability of that scenario.
+    + NPV = (0.2 * 241.597) + (0.5 * 206.907) + (0.3 * 165.2395)
+    + NPV = 201.3447
+4. Plug NPV values for the uncertain scenario and the into the T=0 scenario into the equation in step 3 of question 2C.
+    + NPV(uncertain) = NPV(0)*theta^(1-eta)^
+5. Rearrange equation such that theta is on the left side of the equation.
+    + theta = (NPV(uncertain)/NPV(0))^(1/(1-eta))^
+6. Plug NPV values into the equation.
+    + theta = (201.3447/255.2734)^(1/(1-0.5))^
+    + theta = 0.622113
+7. Calculate theta* by doing 1-theta found in step 6 and multiplying by 100 to get a percentage.
+    + theta* = (1 - 0.622113)*100
+    + theta* = 37.79%
